@@ -1,0 +1,5 @@
+# finance_tracking ingest — Python deps
+psycopg2-binary>=2.9
+google-api-python-client>=2.100
+google-auth>=2.23
+google-auth-oauthlib>=1.1

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Finance Tracker — Mock v2</title>
+<style>
+  :root{
+    --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#222220;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --baseline:#383835; --ring:rgba(255,255,255,0.10);
+    --accent:#3987e5; --accent-soft:#1c5cab;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    --r:14px; font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--plane);color:var(--ink);padding:28px;min-height:100vh}
+  .wrap{max-width:1200px;margin:0 auto}
+  .tnum{font-variant-numeric:tabular-nums}
+  button{font-family:inherit;cursor:pointer}
+
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:650;letter-spacing:-0.02em}
+  .brand .dot{color:var(--accent);font-size:22px}
+  .brand small{color:var(--muted);font-weight:450;font-size:13px;margin-left:6px}
+  .month{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--ring);
+    border-radius:10px;padding:9px 14px;font-size:14px}
+  .month select{background:transparent;color:var(--ink);border:none;font-size:14px;font-weight:600;outline:none;cursor:pointer}
+  .month select option{background:var(--surface)}
+
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+  .tile{background:var(--surface);border:1px solid var(--ring);border-radius:var(--r);padding:18px 18px 16px;position:relative}
+  .tile .lbl{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
+  .tile .val{font-size:25px;font-weight:680;letter-spacing:-0.02em}
+  .tile .sub{margin-top:6px;font-size:12.5px;color:var(--ink-2)}
+  .tile .sub.good{color:var(--good)} .tile .sub.warn{color:var(--warning)}
+  .tile .setbtn{position:absolute;top:14px;right:14px;background:var(--surface-2);border:1px solid var(--ring);
+    color:var(--ink-2);border-radius:7px;font-size:11px;padding:4px 8px}
+  .tile input{width:130px;background:var(--surface-2);border:1px solid var(--accent);border-radius:8px;
+    color:var(--ink);font-size:20px;font-weight:680;padding:4px 8px;outline:none;font-family:inherit}
+
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-bottom:14px}
+  .card{background:var(--surface);border:1px solid var(--ring);border-radius:var(--r);padding:20px}
+  .card .hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px}
+  .card h2{font-size:14px;font-weight:620}
+  .card .cap{color:var(--muted);font-size:12px;margin-bottom:18px}
+  .editbtn{background:var(--surface-2);border:1px solid var(--ring);color:var(--ink-2);border-radius:8px;
+    font-size:12px;padding:5px 11px}
+  .editbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  .bar-row{display:grid;grid-template-columns:130px 1fr 96px;align-items:center;gap:12px;margin-bottom:13px}
+  .bar-row .name{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track{height:16px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+  .fill{height:100%;background:var(--accent);border-radius:4px}
+  .fill.uncat{background:repeating-linear-gradient(135deg,var(--accent-soft),var(--accent-soft) 6px,transparent 6px,transparent 12px);border:1px dashed var(--muted)}
+  .bar-row .amt{text-align:right;font-size:13px;font-weight:600}
+  .bar-row .amt small{color:var(--muted);font-weight:450;font-size:11px;display:block}
+
+  .bud{margin-bottom:15px}
+  .bud .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;font-size:13px}
+  .bud .top .r{color:var(--ink-2);font-size:12px}
+  .bud .top .r input{width:66px;background:var(--surface-2);border:1px solid var(--accent);border-radius:6px;
+    color:var(--ink);font-size:12px;padding:2px 6px;text-align:right;outline:none;font-family:inherit}
+  .ptrack{height:9px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+  .pfill{height:100%;border-radius:5px}
+  .st-good{color:var(--good)} .st-warn{color:var(--warning)} .st-crit{color:var(--critical)}
+  .bg-good{background:var(--good)} .bg-warn{background:var(--warning)} .bg-crit{background:var(--critical)}
+
+  /* line chart */
+  svg{display:block;width:100%;height:150px;overflow:visible}
+  .ln{fill:none;stroke:var(--accent);stroke-width:2}
+  .dot{fill:var(--surface);stroke:var(--accent);stroke-width:2}
+  .dot.cur{fill:var(--accent)}
+  .lbl-x{fill:var(--muted);font-size:11px}
+  .lbl-v{fill:var(--ink-2);font-size:10.5px}
+
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);
+    font-weight:600;padding:0 12px 12px;border-bottom:1px solid var(--grid)}
+  th.r,td.r{text-align:right}
+  td{padding:12px;font-size:13.5px;border-bottom:1px solid var(--grid);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .merch{font-weight:550}.date{color:var(--muted);font-size:12.5px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;
+    background:var(--surface-2);border:1px solid var(--ring);color:var(--ink-2)}
+  .pill .swatch{width:8px;height:8px;border-radius:2px;background:var(--accent)}
+  .pencil{background:none;border:none;color:var(--muted);font-size:12px;margin-left:6px}
+  .pencil:hover{color:var(--accent)}
+  .declined{color:var(--critical);font-size:11px;font-weight:600;text-transform:uppercase}
+  tr.need td{background:rgba(57,135,229,0.06)}
+  select.cat{background:var(--surface-2);color:var(--ink);border:1px solid var(--accent);border-radius:8px;
+    padding:6px 10px;font-size:12.5px;outline:none;cursor:pointer;font-family:inherit}
+  select.cat option{background:var(--surface)}
+  .cbtn{border:none;border-radius:7px;font-size:12px;padding:5px 10px;margin-left:6px}
+  .cbtn.ok{background:var(--good);color:#fff} .cbtn.no{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--ring)}
+  .foot{color:var(--muted);font-size:12px;margin-top:22px;text-align:center;line-height:1.6}
+  @media(max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand"><span class="dot">◉</span> Finance Tracker <small id="hdrsub">expenditure</small></div>
+    <div class="month">
+      <span style="color:var(--muted);font-size:12px">Month</span>
+      <select id="monthsel" onchange="render()"></select>
+    </div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="hd"><h2>Spend by category</h2></div>
+      <div class="cap">posted card payments, ranked</div>
+      <div id="bars"></div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h2>Budget vs actual</h2>
+        <button class="editbtn" id="bedit" onclick="toggleBudget()">Edit budgets</button></div>
+      <div class="cap" id="bcap">spent against your per-category limits</div>
+      <div id="budgets"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="hd"><h2>Monthly spend trend</h2></div>
+    <div class="cap">Apr – Aug 2026 · total spend (excl. transfers)</div>
+    <svg id="line" viewBox="0 0 720 150" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card">
+    <div class="hd"><h2>Transactions</h2></div>
+    <div class="cap">newest first · pick a category, then <b>confirm</b> — edit any row anytime with ✎</div>
+    <table><thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th class="r">Amount</th></tr></thead>
+      <tbody id="rows"></tbody></table>
+  </div>
+
+  <div class="foot">
+    Design mock · real Discovery figures. Live app: month selector, budget edits &amp; category edits all write to Postgres
+    (<code>GET/PATCH</code> via the Node API). Editing here is simulated.
+  </div>
+</div>
+
+<script>
+const CATS=["Groceries","Fuel","Transport","Dining & Takeout","Health & Pharmacy",
+  "Entertainment","Shopping","Subscriptions","Wellness","Vending","Uncategorised"];
+const money=v=>"R "+v.toLocaleString('en-ZA',{minimumFractionDigits:2});
+
+// per-category monthly budget limits (editable in the mock)
+let LIMITS={Fuel:2500,"Dining & Takeout":1200,Groceries:2000,Wellness:900,Transport:1500};
+let BUDGET=10000;           // overall monthly budget (editable)
+let budgetEdit=false;
+
+// real per-month expense data
+const M={
+ "Apr 2026":{cats:[["Uncategorised",3020.42,1],["Transport",2212.00],["Fuel",1146.34],["Groceries",1099.81],["Wellness",965.00],["Health & Pharmacy",88.98],["Dining & Takeout",65.00]],
+   txns:[["28 Apr","Transfer / Uncltd Merchant",null,780.00,1],["24 Apr","BP Maxwell Drive","Fuel",600.00],["20 Apr","Uber Trip","Transport",212.00],["15 Apr","Woolworths","Groceries",243.10]]},
+ "May 2026":{cats:[["Uncategorised",3901.86,1],["Fuel",1556.04],["Groceries",1101.18],["Dining & Takeout",890.53],["Wellness",600.00],["Transport",209.99],["Health & Pharmacy",124.99]],
+   txns:[["27 May","Takealot Order",null,1299.00,1],["22 May","Engen Rivonia","Fuel",700.00],["18 May","Uber Eats","Dining & Takeout",188.50],["10 May","Clicks","Health & Pharmacy",124.99]]},
+ "Jun 2026":{cats:[["Uncategorised",3086.38,1],["Fuel",1800.00],["Groceries",941.99],["Wellness",865.00],["Transport",50.00]],
+   txns:[["26 Jun","Steam Games",null,459.00,1],["19 Jun","Shell Fourways","Fuel",650.00],["12 Jun","Cannafrica","Wellness",315.00],["05 Jun","Checkers","Groceries",288.40]]},
+ "Jul 2026":{cats:[["Uncategorised",2701.27,1],["Groceries",1659.74],["Fuel",1237.00],["Wellness",1035.00],["Transport",568.00],["Dining & Takeout",55.00]],
+   txns:[["29 Jul","Amazon AWS",null,612.00,1],["21 Jul","Woolworths","Groceries",421.30],["14 Jul","BP","Fuel",620.00],["07 Jul","Bolt","Transport",188.00]]},
+ "Aug 2026":{cats:[["Fuel",2333.60],["Dining & Takeout",1483.41],["Groceries",1296.87],["Uncategorised",1282.89,1],["Wellness",670.00],["Transport",317.95],["Health & Pharmacy",155.97],["Entertainment",87.00],["Vending",60.00]],
+   txns:[["31 Aug","BP Maxwell Drive","Fuel",600.00],["30 Aug","Uber Eats Cpt","Dining & Takeout",148.50],["29 Aug","Kara Nichas Johannes",null,135.00,1],["28 Aug","Slayer Energy","—",50.00,0,"declined"],["27 Aug","Ae Constantia Park Cs",null,76.98,1]]},
+};
+const ORDER=Object.keys(M);
+const TREND=ORDER.map(m=>[m.split(' ')[0], M[m].cats.reduce((s,c)=>s+c[1],0)]);
+
+// month dropdown
+document.getElementById('monthsel').innerHTML=ORDER.slice().reverse().map((m,i)=>`<option ${i===0?'selected':''}>${m}</option>`).join('');
+
+function render(){
+  const mk=document.getElementById('monthsel').value, d=M[mk];
+  const total=d.cats.reduce((s,c)=>s+c[1],0);
+  const uncat=d.cats.find(c=>c[2]), uncatAmt=uncat?uncat[1]:0;
+  const uncatCount=d.txns.filter(t=>t[4]).length;
+  const remaining=BUDGET-total, remPct=Math.round(remaining/BUDGET*100);
+  document.getElementById('hdrsub').textContent='expenditure · '+mk;
+
+  // tiles
+  document.getElementById('tiles').innerHTML=`
+   <div class="tile"><div class="lbl">Total Spent</div><div class="val tnum">${money(total)}</div><div class="sub">excl. transfers</div></div>
+   <div class="tile"><div class="lbl">Monthly Budget</div>
+     <button class="setbtn" onclick="editBudget()">Set</button>
+     <div class="val tnum" id="budval">${money(BUDGET)}</div><div class="sub">tap Set to change</div></div>
+   <div class="tile"><div class="lbl">Remaining</div>
+     <div class="val tnum ${remaining<0?'st-crit':'st-good'}">${money(remaining)}</div>
+     <div class="sub ${remaining<0?'warn':'good'}">${remPct}% of budget ${remaining<0?'over':'left'}</div></div>
+   <div class="tile"><div class="lbl">Needs Review</div><div class="val tnum">${uncatCount}</div>
+     <div class="sub warn">uncategorised · ${money(uncatAmt)}</div></div>`;
+
+  // bars
+  const max=Math.max(...d.cats.map(c=>c[1]));
+  document.getElementById('bars').innerHTML=d.cats.map(([n,v,u])=>`
+   <div class="bar-row"><div class="name">${n}</div>
+     <div class="track"><div class="fill ${u?'uncat':''}" style="width:${(v/max*100).toFixed(1)}%"></div></div>
+     <div class="amt tnum">${money(v)}<small>${(v/total*100).toFixed(0)}%</small></div></div>`).join('');
+
+  // budgets
+  renderBudgets(d);
+  // line
+  renderLine(mk);
+  // txns
+  document.getElementById('rows').innerHTML=d.txns.map((t,i)=>rowHTML(t,i)).join('');
+}
+
+function renderBudgets(d){
+  const rows=Object.keys(LIMITS).map(n=>{
+    const actual=(d.cats.find(c=>c[0]===n)||[0,0])[1], l=LIMITS[n];
+    const p=Math.min(actual/l*100,100), over=actual>l, cls=over?'crit':(p>85?'warn':'good');
+    const icon=over?'⚠':(p>85?'●':'✓');
+    const right=budgetEdit
+      ? `<span class="r tnum">${money(actual)} / <input type="number" value="${l}" onchange="setLimit('${n}',this.value)"></span>`
+      : `<span class="r tnum">${money(actual)} / ${l.toLocaleString('en-ZA')}</span>`;
+    return `<div class="bud"><div class="top"><span>${n} <span class="st-${cls}">${icon}</span></span>${right}</div>
+      <div class="ptrack"><div class="pfill bg-${cls}" style="width:${p.toFixed(1)}%"></div></div></div>`;
+  }).join('');
+  document.getElementById('budgets').innerHTML=rows;
+}
+function toggleBudget(){budgetEdit=!budgetEdit;
+  document.getElementById('bedit').classList.toggle('on',budgetEdit);
+  document.getElementById('bedit').textContent=budgetEdit?'Done':'Edit budgets';
+  document.getElementById('bcap').textContent=budgetEdit?'set each category limit — saves to DB':'spent against your per-category limits';
+  render();}
+function setLimit(n,v){LIMITS[n]=+v||0;render();}
+function editBudget(){
+  const t=document.getElementById('budval');
+  t.outerHTML=`<input id="budval" class="tnum" type="number" value="${BUDGET}" onblur="saveBudget(this)" onkeydown="if(event.key==='Enter')this.blur()">`;
+  document.getElementById('budval').focus();
+}
+function saveBudget(el){BUDGET=+el.value||0;render();}
+
+function renderLine(curMonth){
+  const W=720,H=150,pad=28, xs=(W-2*pad)/(TREND.length-1);
+  const max=Math.max(...TREND.map(t=>t[1]))*1.12;
+  const pts=TREND.map((t,i)=>[pad+i*xs, H-pad-(t[1]/max*(H-2*pad))]);
+  const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const dots=pts.map((p,i)=>{const cur=TREND[i][0]===curMonth.split(' ')[0];
+    return `<circle class="dot ${cur?'cur':''}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${cur?5:4}"></circle>
+      <text class="lbl-v" x="${p[0].toFixed(1)}" y="${(p[1]-12).toFixed(1)}" text-anchor="middle">R${(TREND[i][1]/1000).toFixed(1)}k</text>
+      <text class="lbl-x" x="${p[0].toFixed(1)}" y="${H-8}" text-anchor="middle">${TREND[i][0]}</text>`;}).join('');
+  document.getElementById('line').innerHTML=`<path class="ln" d="${path}"/>${dots}`;
+}
+
+// ---- transaction category editing: pick -> confirm -> pill (with ✎ re-edit) ----
+function rowHTML(t,i){
+  const [d,m,c,a,need,dec]=t;
+  let cell;
+  if(dec==='declined') cell=`<span class="declined">✕ declined</span>`;
+  else if(need||!c) cell=selectHTML(i,null);
+  else cell=pillHTML(c,i);
+  return `<tr class="${(need&&!c)?'need':''}" id="tr${i}"><td class="date">${d}</td>
+    <td class="merch">${m}</td><td id="cat${i}">${cell}</td>
+    <td class="r tnum" ${dec==='declined'?'style="color:var(--muted);text-decoration:line-through"':''}>${money(a)}</td></tr>`;
+}
+function pillHTML(c,i){return `<span class="pill"><span class="swatch"></span>${c}</span>
+  <button class="pencil" onclick="editCat(${i},'${c.replace(/'/g,"\\'")}')">✎ edit</button>`;}
+function selectHTML(i,cur){return `<select class="cat" id="sel${i}" onchange="pick(${i})">
+   <option value="" ${cur?'':'selected'} disabled>Choose…</option>
+   ${CATS.map(x=>`<option ${x===cur?'selected':''}>${x}</option>`).join('')}</select>
+   <span id="cf${i}"></span>`;}
+function pick(i){const v=document.getElementById('sel'+i).value; if(!v)return;
+  document.getElementById('cf'+i).innerHTML=
+    `<button class="cbtn ok" onclick="confirmCat(${i})">✓ Confirm</button>
+     <button class="cbtn no" onclick="cancelCat(${i})">Cancel</button>`;}
+function confirmCat(i){const v=document.getElementById('sel'+i).value;
+  document.getElementById('cat'+i).innerHTML=pillHTML(v,i);
+  document.getElementById('tr'+i).classList.remove('need');}
+function cancelCat(i){document.getElementById('cat'+i).innerHTML=selectHTML(i,null);}
+function editCat(i,cur){document.getElementById('cat'+i).innerHTML=selectHTML(i,cur);
+  document.getElementById('sel'+i).value=cur; pick(i);}
+
+render();
+</script>
+</body>
+</html>

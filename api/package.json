@@ -1,0 +1,17 @@
+{
+  "name": "finance-tracking-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Node API for the finance_tracking budget dashboard.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file=../.env server.js",
+    "dev": "node --watch --env-file=../.env server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}
