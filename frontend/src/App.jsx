@@ -13,11 +13,12 @@ const noBtn = { border: "1px solid var(--ring)", borderRadius: 7, fontSize: 12, 
 const pencil = { background: "none", border: "none", color: "var(--muted)", fontSize: 13, marginLeft: 6, cursor: "pointer" };
 
 function Tile({ label, value, sub, tone, onClick, action }) {
+  const isMobile = useIsMobile();
   const tonec = tone === "good" ? "var(--good)" : tone === "crit" ? "var(--critical)" : tone === "warn" ? "var(--warning)" : "var(--ink-2)";
   return (
-    <div style={{ ...card, padding: "18px 18px 16px", position: "relative", cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
+    <div style={{ ...card, padding: isMobile ? "16px 14px 14px" : "18px 18px 16px", position: "relative", cursor: onClick ? "pointer" : "default" }} onClick={onClick}>
       <div style={{ color: "var(--muted)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>{label}</div>
-      <div className="tnum" style={{ fontSize: 25, fontWeight: 680, color: tone === "good" ? "var(--good)" : tone === "crit" ? "var(--critical)" : "var(--ink)" }}>{value}</div>
+      <div className="tnum" style={{ fontSize: isMobile ? 19 : 25, fontWeight: 680, whiteSpace: "nowrap", color: tone === "good" ? "var(--good)" : tone === "crit" ? "var(--critical)" : "var(--ink)" }}>{value}</div>
       <div style={{ marginTop: 6, fontSize: 12.5, color: tonec }}>{sub}</div>
       {action}
     </div>
@@ -67,7 +68,20 @@ function LineChart({ data, currentKey }) {
   );
 }
 
+// Track a mobile breakpoint so the fixed inline-grid layout can collapse to one
+// column on phones (inline styles can't use CSS media queries).
+function useIsMobile(bp = 640) {
+  const [m, setM] = useState(typeof window !== "undefined" && window.innerWidth < bp);
+  useEffect(() => {
+    const on = () => setM(window.innerWidth < bp);
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, [bp]);
+  return m;
+}
+
 export default function App() {
+  const isMobile = useIsMobile();
   const [months, setMonths] = useState([]);
   const [month, setMonth] = useState("");
   const [summary, setSummary] = useState(null);
@@ -214,7 +228,7 @@ export default function App() {
     const delta = dTrend.length >= 2 ? dTrend[dTrend.length - 1].total - dTrend[0].total : 0;
     const dir = delta > 0 ? { t: "↑ increasing", c: "var(--critical)" } : delta < 0 ? { t: "↓ decreasing", c: "var(--good)" } : { t: "→ steady", c: "var(--ink-2)" };
     return (
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: 28 }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 14 : 28, overflowX: "hidden" }}>
         {Header}
         <button onClick={() => setDrill(null)} style={{ ...noBtn, marginLeft: 0, marginBottom: 16 }}>← All categories</button>
         <div style={{ ...card, marginBottom: 14 }}>
@@ -244,10 +258,12 @@ export default function App() {
           <h2 style={{ fontSize: 14, fontWeight: 620, margin: 0 }}>Every {drill} transaction in range</h2>
           <div style={{ color: "var(--muted)", fontSize: 12, margin: "2px 0 14px" }}>
             {dTxns.length} transactions · spot a snack-not-fuel? re-tag it inline and it re-sorts everywhere</div>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead><tr>{["Date", "Merchant", "Category", "Note", "Amount"].map((h, i) => th(h, i === 4))}</tr></thead>
-            <tbody>{dTxns.map(renderRow)}</tbody>
-          </table>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", minWidth: 520, borderCollapse: "collapse" }}>
+              <thead><tr>{["Date", "Merchant", "Category", "Note", "Amount"].map((h, i) => th(h, i === 4))}</tr></thead>
+              <tbody>{dTxns.map(renderRow)}</tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -259,11 +275,11 @@ export default function App() {
   const gotoReview = () => { setFilter("uncat"); txnRef.current?.scrollIntoView({ behavior: "smooth" }); };
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: 28 }}>
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? 14 : 28, overflowX: "hidden" }}>
       {Header}
       {!summary ? <div style={{ color: "var(--muted)", padding: 40 }}>Loading your spending…</div> : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? 10 : 14, marginBottom: 14 }}>
             <Tile label="Total Spent" value={money(summary.total)} sub={`+ ${money(summary.transfersTotal)} transfers`} />
             <Tile label="Monthly Budget"
               value={budgetEdit ? <input autoFocus defaultValue={summary.budget} type="number"
@@ -277,13 +293,13 @@ export default function App() {
               sub={<span style={{ color: "var(--accent)" }}>▸ review {money(summary.needsReview.amount)}</span>} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "minmax(0,1fr)" : "minmax(0,1.35fr) minmax(0,1fr)", gap: 14, marginBottom: 14 }}>
            <div style={card}>
             <h2 style={{ fontSize: 14, fontWeight: 620, margin: 0 }}>Spend by category</h2>
             <div style={{ color: "var(--muted)", fontSize: 12, margin: "2px 0 18px" }}>
               {months.find((m) => m.key === month)?.label} · click a category to drill in</div>
             {summary.categories.map((c) => (
-              <div key={c.name} onClick={() => openDrill(c.name)} style={{ display: "grid", gridTemplateColumns: "150px 1fr 96px", alignItems: "center", gap: 12, marginBottom: 13, cursor: "pointer" }}>
+              <div key={c.name} onClick={() => openDrill(c.name)} style={{ display: "grid", gridTemplateColumns: isMobile ? "104px 1fr 78px" : "150px 1fr 96px", alignItems: "center", gap: isMobile ? 8 : 12, marginBottom: 13, cursor: "pointer" }}>
                 <div style={{ fontSize: 13, color: "var(--ink-2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name} <span style={{ color: "var(--muted)" }}>›</span></div>
                 <div style={{ height: 16, background: "var(--surface-2)", borderRadius: 4, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${(c.amount / max * 100).toFixed(1)}%`, background: c.color || "var(--accent)", borderRadius: 4 }} />
@@ -350,13 +366,15 @@ export default function App() {
               const box = (l, v, c) => (<div style={{ background: "var(--surface-2)", border: "1px solid var(--ring)", borderRadius: 10, padding: "10px 14px", flex: 1 }}>
                 <div style={{ color: "var(--muted)", fontSize: 11, textTransform: "uppercase" }}>{l}</div>
                 <div className="tnum" style={{ fontSize: 17, fontWeight: 650, color: c, marginTop: 3 }}>{money(v)}</div></div>);
-              return (<div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+              return (<div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
                 {box("Internal", sum("Transfer (internal)"), "#5c7cfa")}{box("External", sum("Transfer (external)"), "var(--ink)")}{box("Untagged", untagged, "var(--warning)")}</div>);
             })()}
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["Date", "Merchant", "Category", "Note", "Amount"].map((h, i) => th(h, i === 4))}</tr></thead>
-              <tbody>{shown.map(renderRow)}</tbody>
-            </table>
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", minWidth: 520, borderCollapse: "collapse" }}>
+                <thead><tr>{["Date", "Merchant", "Category", "Note", "Amount"].map((h, i) => th(h, i === 4))}</tr></thead>
+                <tbody>{shown.map(renderRow)}</tbody>
+              </table>
+            </div>
           </div>
           <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 22, textAlign: "center" }}>
             Live from Postgres · edits save + teach the categoriser. Next: budget-vs-actual editor, overall line-graph trend.

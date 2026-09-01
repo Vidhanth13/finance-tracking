@@ -3,11 +3,19 @@
 // two writes the app needs: re-categorise a transaction, and edit budgets.
 import express from "express";
 import cors from "cors";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { q } from "./db.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Built React app (vite build → frontend/dist). Served from this same origin in
+// production so the app's relative fetch("/api/...") calls just work — no CORS.
+const DIST = path.resolve(__dirname, "../frontend/dist");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(DIST));
 
 const num = (v) => (v == null ? 0 : Number(v));
 // Common spend predicate: real expenses only (posted debits, excl. transfers).
@@ -218,10 +226,15 @@ app.patch("/api/settings/monthly-budget", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// SPA fallback: any non-/api GET returns index.html so the React app owns routing.
+app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(DIST, "index.html")));
+
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({ error: err.message });
 });
 
+// Bind 0.0.0.0 so the app is reachable over the Tailscale interface, not just localhost.
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`finance_tracking API on http://localhost:${PORT}`));
+app.listen(PORT, "0.0.0.0", () =>
+  console.log(`finance_tracking serving app + API on http://localhost:${PORT}`));
