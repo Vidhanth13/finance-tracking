@@ -122,6 +122,60 @@ app.get("/api/category-trend", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// --- per-category series matrix (Insights watchlist) -----------------------
+// For each expense category: its monthly spend series over the last N months,
+// plus latest vs previous month and a % delta — powers the rising/falling view.
+app.get("/api/category-series", async (req, res, next) => {
+  try {
+    const n = Math.min(Math.max(parseInt(req.query.months) || 6, 2), 24);
+    // Anchor the window to the latest month that has data, not "today", so the
+    // view still works if the current calendar month is empty.
+    const last = await q(
+      `SELECT date_trunc('month', max(occurred_at)) AS m FROM txn WHERE occurred_at IS NOT NULL`);
+    const anchor = last.rows[0]?.m;
+    if (!anchor) return res.json({ months: [], categories: [] });
+
+    const { rows } = await q(`
+      SELECT c.name, c.color,
+             to_char(date_trunc('month', t.occurred_at),'YYYY-MM') AS key,
+             to_char(date_trunc('month', t.occurred_at),'Mon')     AS label,
+             round(sum(t.amount), 2) AS total
+      FROM txn t JOIN category c ON c.id = t.category_id
+      WHERE ${SPEND}
+        AND t.occurred_at >= (date_trunc('month', $1::timestamptz) - make_interval(months => $2 - 1))
+      GROUP BY c.name, c.color, 3, 4, date_trunc('month', t.occurred_at)
+      ORDER BY date_trunc('month', t.occurred_at)`, [anchor, n]);
+
+    // Build the ordered month axis (oldest → newest) covering the window.
+    const months = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(anchor);
+      d.setMonth(d.getMonth() - i);
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        label: d.toLocaleString("en", { month: "short" }),
+      });
+    }
+
+    const byCat = new Map();
+    for (const r of rows) {
+      if (!byCat.has(r.name)) byCat.set(r.name, { name: r.name, color: r.color, vals: {} });
+      byCat.get(r.name).vals[r.key] = num(r.total);
+    }
+
+    const categories = [...byCat.values()].map((c) => {
+      const series = months.map((m) => ({ key: m.key, label: m.label, total: c.vals[m.key] || 0 }));
+      const cur = series[series.length - 1].total;
+      const prev = series[series.length - 2]?.total || 0;
+      const deltaPct = prev ? Math.round(((cur - prev) / prev) * 100) : (cur ? 100 : 0);
+      const total = series.reduce((s, p) => s + p.total, 0);
+      return { name: c.name, color: c.color, series, cur, prev, deltaPct, total };
+    }).sort((a, b) => b.total - a.total);
+
+    res.json({ months, categories });
+  } catch (e) { next(e); }
+});
+
 // --- budgets vs actual for a month -----------------------------------------
 app.get("/api/budgets", async (req, res, next) => {
   try {

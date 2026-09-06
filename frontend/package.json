@@ -11,8 +11,16 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@visx/curve": "^4.0.0",
+    "@visx/gradient": "^4.0.0",
+    "@visx/group": "^4.0.0",
+    "@visx/responsive": "^4.0.0",
+    "@visx/scale": "^4.0.0",
+    "@visx/shape": "^4.0.0",
+    "framer-motion": "^13.2.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
