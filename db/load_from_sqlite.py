@@ -24,7 +24,7 @@ PG_CONN = dict(
     host=os.environ.get("FINANCE_PGHOST", "localhost"),
     port=os.environ.get("FINANCE_PGPORT", "5432"),
     dbname=os.environ.get("FINANCE_PGDATABASE", "finance_tracking"),
-    user=os.environ.get("FINANCE_PGUSER", "jarvis"),
+    user=os.environ.get("FINANCE_PGUSER", "finance_app"),
     password=os.environ.get("FINANCE_PGPASSWORD"),   # set via env / project .env
 )
 

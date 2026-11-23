@@ -1,5 +1,5 @@
 -- finance_tracking — core schema
--- PostgreSQL 18. Owner role: jarvis.
+-- PostgreSQL 18. Owner role: finance_app.
 --
 -- Design notes:
 --   * `txn` is the transaction spine, ported from the Gmail-brief SQLite `txn`
